@@ -18,9 +18,11 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 
+const REDIS_URL = process.env.REDIS_URL;
+
 // ✅ Redis setup
 const redisClient = redis.createClient({
-  url: "redis://localhost:6379",
+  url: REDIS_URL,
 });
 
 redisClient.on("error", (err) => {
