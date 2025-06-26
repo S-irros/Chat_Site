@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Chat Page</title>
+  </head>
+  <body>
+    <!-- Login Page -->
+    <div id="login-page" class="page container active">
+      <p id="system-message"></p>
+      <h2>Login</h2>
+      <input id="login-username" type="text" placeholder="Username" />
+      <input id="login-password" type="password" placeholder="Password" autocomplete="off" />
+      <button class="submit-btn" onclick="login()">Login</button>
+      <a href="#" onclick="showPage('forget-password')"
+        >Forget Password?</a>
+      <p id="account?">
+        Don't have an account?
+        <a href="#" onclick="showPage('signup-page')">create one.</a>
+      </p>
+    </div>
+
+    <!-- Signup Page -->
+    <div id="signup-page" class="page container">
+      <p id="system-message"></p>
+      <h2>Signup</h2>
+      <input type="text" placeholder="Username" id="signup-username" />
+      <input type="text" placeholder="Full Name" id="signup-name" />
+      <input type="text" placeholder="Email" id="signup-email" />
+      <input type="password" placeholder="Password" id="signup-password" autocomplete="off" />
+      <input type="text" placeholder="Phone" id="signup-phone" />
+      <select name="gender" id="signup-gender" title="gender-selector">
+        <option value="male">male</option>
+        <option value="female">female</option>
+      </select>
+      <button class="submit-btn" onclick="signup()">Signup</button>
+      <p>
+        already have an account?
+        <a href="#" onclick="showPage('login-page')">Login</a>
+      </p>
+    </div>
+
+    <!-- Forget-Password Page -->
+    <div id="forget-password" class="page container">
+      <p>Find your account</p>
+      <input type="text" id="forget-email" placeholder="Email" />
+      <p id="system-message"></p>
+      <button onclick="forgetPassword()">Send OTP</button>
+      <p>Back to <a href="#" onclick="showPage('login-page')">Login</a></p>
+    </div>
+
+    <!-- Enter-OTP Page -->
+    <div id="enter-OTP-page" class="page container">
+      <h2>Enter OTP</h2>
+      <p id="system-message"></p>
+      <input type="text" id="OTP" placeholder="OTP" />
+      <button id="check-OTP" onclick="verifyOTP()">Check OTP</button>
+      <p>
+        Back to
+        <a id="edit-email" href="#" onclick="showPage('forget-password')"
+          >Edit email</a
+        >
+      </p>
+    </div>
+
+    <!-- Reset-Password Page -->
+    <div id="reset-password-page" class="page container">
+      <h2>Reset Your Password</h2>
+      <p id="system-message"></p>
+      <input type="password" id="reset-password-input" placeholder="new password" autocomplete="off"/>
+      <button onclick="resetPassword()">Reset Password</button>
+      <p>
+        Back to
+        <a id="edit-OTP" href="#" onclick="showPage('enter-OTP-page')"
+          >Edit OTP</a
+        >
+      </p>
+    </div>
+
+    <!-- Change-Password Page -->
+    <div id="change-password-page" class="page container">
+      <h2>Change Password</h2>
+      <input
+        type="password"
+        name="current-password"
+        id="current-password"
+        placeholder="current password"
+        autocomplete="off"
+      />
+      <input
+        type="password"
+        name="new-password"
+        id="new-password"
+        placeholder="new password"
+        autocomplete="off"
+      />
+      <button id="save-changes" onclick="changePassword()">Save Changes</button>
+      <p id="system-message"></p>
+      <a href="#" onclick="showPage('chat-page')">Back</a>
+    </div>
+
+    <!-- Chat Page -->
+    <div id="chat-page" class="page body">
+      <h1>Chat Page</h1>
+      <img src="./media/aug_8_01.jpg" alt="background-image" />
+      <div class="app">
+        <ul id="rooms">
+          <li onclick="joinRoom(event)">Friends</li>
+          <li>Work</li>
+          <li>Sports</li>
+          <li>Family</li>
+        </ul>
+
+        <form id="form">
+          <ul id="messages"></ul>
+          <input id="message" type="text" placeholder="enter your message" />
+
+          <button id="send">Send</button>
+          <button id="leaveRoom">Leave Room</button>
+
+          <p id="system-message"></p>
+        </form>
+      </div>
+      <button id="change-password" onclick="showPage('change-password-page')">
+        Change Password
+      </button>
+      <button id="logout">Logout</button>
+      <button id="delete-account" onclick="deleteAccount()">
+        Delete account
+      </button>
+    </div>
+
+    <script>
+      window.onload = function () {
+        const hash = window.location.hash.replace("#", "");
+        if (hash) {
+          showPage(hash);
+        }
+      };
+
+      function showPage(pageID) {
+        document.querySelectorAll(".page").forEach((p) => {
+          p.classList.remove("active");
+        });
+        document.getElementById(pageID).classList.add("active");
+      }
+
+      let userName;
+      let currentRoom;
+      let userID;
+
+      // Login Function:
+      async function login() {
+        const username = document.getElementById("login-username").value;
+        const password = document.getElementById("login-password").value;
+        const systemMessage = document.querySelector(
+          "#login-page #system-message"
+        );
+
+        try {
+          const response = await fetch(`/api/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: username,
+              password: password,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.message || "Login failed");
+          }
+          localStorage.setItem("token", data.token);
+          userID = data.userID;
+          userName = data.username;
+          password.value = "";
+          showPage("chat-page");
+          alert("Login successfull!");
+        } catch (err) {
+          console.error("Error during login: ", err.message);
+          systemMessage.textContent = err.message;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+
+      // Signup Function:
+      async function signup() {
+        const username = document.getElementById("signup-username").value;
+        const name = document.getElementById("signup-name").value;
+        const email = document.getElementById("signup-email").value;
+        const password = document.getElementById("signup-password").value;
+        const phone = document.getElementById("signup-phone").value;
+        const gender = document.getElementById("signup-gender").value;
+
+        const systemMessage = document.querySelector(
+          "#signup-page #system-message"
+        );
+
+        try {
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: username,
+              name: name,
+              email: email,
+              password: password,
+              phone: phone,
+              gender: gender,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.message || "Register Failed");
+          }
+
+          systemMessage.textContent = "Register successfull!";
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+
+          showPage("login-page");
+        } catch (err) {
+          console.error(`Error occurred: `, err.message);
+          systemMessage.textContent = err.message;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+
+      async function forgetPassword() {
+        const email = document.getElementById("forget-email").value;
+
+        const systemMessage = document.querySelector(
+          "#forget-password #system-message"
+        );
+
+        try {
+          const response = await fetch("/api/auth/forget-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error("Error message: ", data.message);
+          }
+          userID = data.userID;
+          showPage("enter-OTP-page");
+        } catch (err) {
+          console.error(`Error occurred: `, err.message);
+          systemMessage.textContent = `${err.message}`;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+
+      async function verifyOTP() {
+        const OTP = document.getElementById("OTP").value;
+
+        const systemMessage = document.querySelector(
+          "#enter-OTP-page #system-message"
+        );
+
+        try {
+          const response = await fetch("/api/auth/forget-password/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              OTP: OTP,
+              userID: userID,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error("Error message: ", data.message);
+          }
+
+          showPage("reset-password-page");
+        } catch (err) {
+          console.error(`Error occurred: `, err.message);
+          systemMessage.textContent = `${err.message}`;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+
+      async function resetPassword() {
+        const newPassword = document.getElementById(
+          "reset-password-input"
+        ).value;
+
+        const systemMessage = document.querySelector(
+          "#reset-password-page #system-message"
+        );
+
+        try {
+          const response = await fetch(
+            "/api/auth/forget-password/reset-password",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                newPassword: newPassword,
+                userID: userID,
+              }),
+            }
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error("Error message: ", data.message);
+          }
+
+          alert("Password reseted successfully!");
+          showPage("login-page");
+        } catch (err) {
+          console.error(`Error occurred: `, err.message);
+          systemMessage.textContent = `${err.message}`;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+
+      async function changePassword() {
+        const oldPassword = document.getElementById("current-password").value;
+        const newPassword = document.getElementById("new-password").value;
+
+        const systemMessage = document.querySelector(
+          "#change-password-page #system-message"
+        );
+
+        try {
+          const response = await fetch("/api/auth/change-password", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+              oldPassword: oldPassword,
+              newPassword: newPassword,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error("Failed!" || data.message);
+          }
+
+          systemMessage.textContent = "Password changed successfully!";
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        } catch (err) {
+          console.error(`Error occurred: `, err.message);
+          systemMessage.textContent = `${err.message}`;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+
+      async function deleteAccount() {
+        try {
+          const response = await fetch("/api/delete-account", {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error("Deletion Failed!" || data.message);
+          }
+
+          systemMessage.textContent = `${data.message}`;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+
+          showPage("login-page");
+        } catch (err) {
+          console.error(`Error occurred: `, err.message);
+          systemMessage.textContent = `${err.message}`;
+          setTimeout(() => {
+            systemMessage.textContent = "";
+          }, 5000);
+        }
+      }
+    </script>
+
+    <script src="socket.io/socket.io.js"></script>
+    <script src="./js/client.js"></script>
+  </body>
+</html>
