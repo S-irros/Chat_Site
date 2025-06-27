@@ -18,23 +18,23 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 
-const REDIS_URL = process.env.REDIS_URL;
+// const REDIS_URL = process.env.REDIS_URL;
 
-// ✅ Redis setup
-const redisClient = redis.createClient({
-  url: REDIS_URL,
-});
+// // ✅ Redis setup
+// const redisClient = redis.createClient({
+//   url: REDIS_URL,
+// });
 
-redisClient.on("error", (err) => {
-  console.error(`Redis error: ${err.message}`);
-});
+// redisClient.on("error", (err) => {
+//   console.error(`Redis error: ${err.message}`);
+// });
 
-redisClient.connect().then(() => {
-  console.log("Connected to Redis successfully");
-});
+// redisClient.connect().then(() => {
+//   console.log("Connected to Redis successfully");
+// });
 
-// ✅ pass redisClient to io
-io.redisClient = redisClient;
+// // ✅ pass redisClient to io
+// io.redisClient = redisClient;
 
 // ✅ pass redisClient to message routes
 const messageRoutes = require("./routes/messageRoutes"); // بعد redisClient
@@ -47,7 +47,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api/messages", messageRoutes(io, redisClient));
+app.use("/api/messages", messageRoutes(io));
 app.use("/api/auth/register", registerRoutes);
 app.use("/api/auth/login", loginRoutes);
 app.use("/api/auth/change-password", changePasswordRoutes);
@@ -78,7 +78,7 @@ app.use((err, req, res, next) => {
 
 // ✅ socket.io logic
 io.on("connection", async (socket) => {
-  const redisClient = io.redisClient;
+  // const redisClient = io.redisClient;
 
   try {
     socket.on("join room", async ({ userName, room }) => {
@@ -122,10 +122,10 @@ io.on("connection", async (socket) => {
         const savedMsg = await msg.save();
         const populatedMsg = await savedMsg.populate("userID", "name");
 
-        const keys = await redisClient.keys(`messages:${room}:*`);
-        for (const key of keys) {
-          await redisClient.del(key);
-        }
+        // const keys = await redisClient.keys(`messages:${room}:*`);
+        // for (const key of keys) {
+        //   await redisClient.del(key);
+        // }
 
         io.to(room).emit("chat message", {
           id: populatedMsg._id,

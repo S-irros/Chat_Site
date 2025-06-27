@@ -1,20 +1,20 @@
 // # Controller for message-related operations
 
 // # Clear Redis cache for a specific room
-async function clearRoomCache(redisClient, room) {
-  try {
-    const keys = await redisClient.keys(`messages:${room}*`);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-      console.log(`Cleared cache for room ${room}`);
-    }
-  } catch (err) {
-    console.error("Error clearing Redis cache: ", err.message);
-  }
-}
+// async function clearRoomCache(redisClient, room) {
+//   try {
+//     const keys = await redisClient.keys(`messages:${room}*`);
+//     if (keys.length > 0) {
+//       await redisClient.del(keys);
+//       console.log(`Cleared cache for room ${room}`);
+//     }
+//   } catch (err) {
+//     console.error("Error clearing Redis cache: ", err.message);
+//   }
+// }
 
 // # Fetch messages for a specific room
-exports.getMessages = async (req, res, io, redisClient) => {
+exports.getMessages = async (req, res, io) => {
   try {
     const room = req.query.room;
     const limit = parseInt(req.query.limit) || 50;
@@ -23,7 +23,7 @@ exports.getMessages = async (req, res, io, redisClient) => {
 
     if (!room) return res.status(400).json({ message: "Room is required" });
 
-    const cachedMessages = await redisClient.get(cacheKey);
+    // const cachedMessages = await redisClient.get(cacheKey);
     if (cachedMessages) {
       return res.status(200).json(JSON.parse(cachedMessages));
     }
@@ -44,7 +44,7 @@ exports.getMessages = async (req, res, io, redisClient) => {
         time: msg.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       }));
 
-      await redisClient.setEx(cacheKey, 3600, JSON.stringify(formattedMessages));
+      // await redisClient.setEx(cacheKey, 3600, JSON.stringify(formattedMessages));
       res.status(200).json(formattedMessages);
     } else {
       return res.status(200).json([]);
@@ -55,7 +55,7 @@ exports.getMessages = async (req, res, io, redisClient) => {
 };
 
 // # Update a message
-exports.updateMessage = async (req, res, io, redisClient) => {
+exports.updateMessage = async (req, res, io) => {
   try {
     const msgID = req.params.id;
     const userID = req.user.id;
@@ -88,7 +88,7 @@ exports.updateMessage = async (req, res, io, redisClient) => {
       userID: updatedMessage.userID,
       userName: user ? user.name : "Unknown",
     });
-    await clearRoomCache(redisClient, room);
+    // await clearRoomCache(redisClient, room);
     res.status(200).json(updatedMessage);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -96,7 +96,7 @@ exports.updateMessage = async (req, res, io, redisClient) => {
 };
 
 // # Delete a message
-exports.deleteMessage = async (req, res, io, redisClient) => {
+exports.deleteMessage = async (req, res, io) => {
   try {
     const msgID = req.params.id;
     const room = req.query.room;
@@ -127,7 +127,7 @@ exports.deleteMessage = async (req, res, io, redisClient) => {
           room: deletedMessage.room,
         });
         io.to(room).emit("system messages", `Message deleted successfully ${userRole === "Admin" ? " by Admin." : "!"}`);
-        await clearRoomCache(redisClient, room);
+        // await clearRoomCache(redisClient, room);
         return res.status(200).json({ message: `Message deleted successfully ${userRole === "Admin" ? " by Admin." : "!"}` });
       } else {
         return res.status(404).json({ error: "Message not found or already deleted" });
